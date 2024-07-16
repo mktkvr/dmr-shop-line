@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="https://clab.line-scdn.net/0hSmH2_K_zDEJ1SxyxnPhzFScZDyILZRlJGX5ddgtKUBlbOg1_L2wAd1MKFhkEEBBvFlFLdA87UQkHG0NGAUZDRTU8Dw4xHwB8L1IFdxs0ExkTCxdELCwF">
+    <title>ข้าวตราเพชร ๑๐๑</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 4.5rem; /* Adjust body padding for sticky navbar */
+        }
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background-color: #ffffff; /* Navbar background color */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: add shadow for depth */
+        }
+        .product {
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: #fff;
+        }
+        .product img {
+            max-width: 100%;
+            height: auto;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .cart-button {
+            transition: width 2s, height 4s;
+        }
+        .button:after {
+        content: "";
+        background: #90EE90;
+        display: block;
+        position: absolute;
+        padding-top: 300%;
+        padding-left: 350%;
+        margin-left: -20px!important;
+        margin-top: -120%;
+        opacity: 0;
+        transition: all 0.8s
+        }
+        .button:active:after {
+        padding: 0;
+        margin: 0;
+        opacity: 1;
+        transition: 0s
+        }
+
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">ข้าวตราเพชร ๑๐๑</a>
+            <div>
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <button class="btn cart-button" data-toggle="modal" data-target="#cartModal" >🛒<i style='font-size:24px'></i>
+                            <span id="cart-count" class="badge badge-secondary">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="my-4 text-center">สินค้า</h1>
+        <div id="product-list" class="row"></div> 
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cartModalLabel">ตะกร้าสินค้า</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="cart-items" class="xs-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิด</button>
+                    <button id="checkout" class="btn btn-primary" style="display: none;">สั่งซื้อ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.4/axios.min.js"></script>
+    <script>
+        // LIFF initialization
+        async function initializeLiff() {
+            // await liff.init({ liffId: '1661402891-kg2vBR78' });
+            // if (!liff.isLoggedIn()) {
+            //     liff.login();
+            // }
+            loadProducts();
+        }
+
+        // Load products from Google Sheets
+        async function loadProducts() {
+            try {
+                const response = await axios.get('https://sheets.googleapis.com/v4/spreadsheets/1BrP4sKXmRVV41uVxtme6U68ROo2YwjaiMwAqSXgni1Q/values/product!A2:D?key=AIzaSyAvfiAtJCUdE_Sxa7REZVTW3n7pCuzJ75U');
+                const products = response.data.values.map(row => ({
+                    name: row[0],
+                    img: row[1],
+                    category: row[2],
+                    price: parseInt(row[3])
+                }));
+
+                const productList = document.getElementById('product-list');
+                products.forEach(product => {
+                    const productDiv = document.createElement('div');
+                    productDiv.className = 'col-md-4 product';
+                    productDiv.innerHTML = `
+                        <div class="card">
+                            <img src="${product.img}" class="card-img-top" alt="${product.name}">
+                            <div class="card-body">
+                                <h5 class="card-title">${product.name}</h5>
+                                <p class="card-text">${product.price} บาท</p>
+                                <button class="btn btn-success " onclick="addToCart(${JSON.stringify(product)})">เพิ่มใส่ตะกร้า 🛒</button>
+                            </div>
+                        </div>
+                    `;
+                    productDiv.querySelector('button').onclick = () => addToCart(product);
+                    productList.appendChild(productDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+
+        // Add product to cart
+        let cart = [];
+        function addToCart(product) {
+            cart.push(product);
+            updateCart();
+            animateCartButton();
+        }
+
+        // Remove product from cart
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        // Update cart display
+        function updateCart() {
+            const cartDiv = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            const checkoutButton = document.getElementById('checkout');
+            cartDiv.innerHTML = '';
+            cart.forEach((product, index) => {
+                const productDiv = document.createElement('div');
+                productDiv.className = 'cart-item';
+                productDiv.innerHTML = `
+                    <span>${product.name}</span>
+                    <span>${product.price} บาท</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeFromCart(${index})">ลบ</button>
+                `;
+                cartDiv.appendChild(productDiv);
+            });
+            cartCount.textContent = cart.length;
+
+            // Show or hide the checkout button based on the cart length
+            if (cart.length > 0) {
+                checkoutButton.style.display = 'block';
+            } else {
+                checkoutButton.style.display = 'none';
+            }
+        }
+
+        // Handle checkout
+        document.getElementById('checkout').onclick = async () => {
+            const total = cart.reduce((sum, product) => sum + product.price, 0);
+            const flexMessage = {
+                "type": "flex",
+                "altText": "ยอดรวมรายการสั่งซื้อ",
+                "contents": {
+                    "type": "bubble",
+                    "body": {
+                        "type": "box",
+                        "layout": "vertical",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "รายการสั่งซื้อ",
+                                "weight": "bold",
+                                "size": "xl"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "margin": "lg",
+                                "spacing": "sm",
+                                "contents": cart.map((product, index) => ({
+                                    "type": "box",
+                                    "layout": "baseline",
+                                    "spacing": "sm",
+                                    "contents": [
+                                        {
+                                            "type": "text",
+                                            "text": `${index + 1}. ${product.name}`,
+                                            "color": "#555555",
+                                            "size": "sm",
+                                            "flex": 0
+                                        },
+                                        {
+                                            "type": "text",
+                                            "text": `${product.price} บาท`,
+                                            "color": "#111111",
+                                            "size": "sm",
+                                            "align": "end"
+                                        }
+                                    ]
+                                }))
+                            },
+                            {
+                                "type": "separator",
+                                "margin": "lg"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "baseline",
+                                "margin": "lg",
+                                "spacing": "sm",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "ยอดรวม",
+                                        "color": "#555555",
+                                        "size": "sm",
+                                        "flex": 0
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": `${total} บาท`,
+                                        "color": "#111111",
+                                        "size": "sm",
+                                        "align": "end"
+                                    }
+                                ]
+                            }
+
+                        ]
+                    }
+                }
+            };
+
+            await liff.sendMessages([flexMessage]);
+            alert('สั่งซื้อสำเร็จ! ดำเนินการชำระเงินต่อที่ช่องแชท');
+            liff.closeWindow(); // Close LIFF window after sending message
+        };
+
+        initializeLiff();
+    </script>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
